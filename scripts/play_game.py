@@ -1,15 +1,15 @@
-from brownie import ConnectFourV1, accounts
+from brownie import CrowdConnectFourV1, accounts
 from brownie.exceptions import VirtualMachineError
 import numpy as np
 import json
 col_array = [0, 1, 2, 3, 4, 5, 6]
 
-json.load(open('build/contracts/ConnectFourV1.json'))
+json.load(open('build/contracts/CrowdConnectFourV1.json'))
 
 def main():
     for i in range(20):
         accounts.add()
-    c4 = ConnectFourV1.deploy({'from': accounts[0]})
+    c4 = CrowdConnectFourV1.deploy({'from': accounts[0]})
     # c4 = ConnectFourV1.at('0x9900faCcc7C5C3565cbe3Cd957D57fb9EcF032bE')
     current_rount_id = c4.globalGameId()
     tx = c4.stake(current_rount_id, 0, {'from': accounts[0], 'value': 10**14})

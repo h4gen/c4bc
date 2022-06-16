@@ -3,7 +3,7 @@ import "OpenZeppelin/openzeppelin-contracts@4.0.0/contracts/security/ReentrancyG
 
 pragma solidity ^0.8.7;
 
-contract ConnectFourV1 is ReentrancyGuard, Ownable {
+contract CrowdConnectFourV1 is ReentrancyGuard, Ownable {
 	/// ERRORS ///
 	error InvalidMove();
 	error Unauthorized();

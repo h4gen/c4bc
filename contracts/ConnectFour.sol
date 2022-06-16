@@ -1,66 +1,9 @@
-pragma solidity ^0.8.7;
-/**
- * @dev Contract module that helps prevent reentrant calls to a function.
- *
- * Inheriting from `ReentrancyGuard` will make the {nonReentrant} modifier
- * available, which can be applied to functions to make sure there are no nested
- * (reentrant) calls to them.
- *
- * Note that because there is a single `nonReentrant` guard, functions marked as
- * `nonReentrant` may not call one another. This can be worked around by making
- * those functions `private`, and then adding `external` `nonReentrant` entry
- * points to them.
- *
- * TIP: If you would like to learn more about reentrancy and alternative ways
- * to protect against it, check out our blog post
- * https://blog.openzeppelin.com/reentrancy-after-istanbul/[Reentrancy After Istanbul].
- */
-abstract contract ReentrancyGuard {
-    // Booleans are more expensive than uint256 or any type that takes up a full
-    // word because each write operation emits an extra SLOAD to first read the
-    // slot's contents, replace the bits taken up by the boolean, and then write
-    // back. This is the compiler's defense against contract upgrades and
-    // pointer aliasing, and it cannot be disabled.
-
-    // The values being non-zero value makes deployment a bit more expensive,
-    // but in exchange the refund on every call to nonReentrant will be lower in
-    // amount. Since refunds are capped to a percentage of the total
-    // transaction's gas, it is best to keep them low in cases like this one, to
-    // increase the likelihood of the full refund coming into effect.
-    uint256 private constant _NOT_ENTERED = 1;
-    uint256 private constant _ENTERED = 2;
-
-    uint256 private _status;
-
-    constructor() {
-        _status = _NOT_ENTERED;
-    }
-
-    /**
-     * @dev Prevents a contract from calling itself, directly or indirectly.
-     * Calling a `nonReentrant` function from another `nonReentrant`
-     * function is not supported. It is possible to prevent this from happening
-     * by making the `nonReentrant` function external, and make it call a
-     * `private` function that does the actual work.
-     */
-    modifier nonReentrant() {
-        // On the first call to nonReentrant, _notEntered will be true
-        require(_status != _ENTERED, "ReentrancyGuard: reentrant call");
-
-        // Any calls to nonReentrant after this point will fail
-        _status = _ENTERED;
-
-        _;
-
-        // By storing the original value once again, a refund is triggered (see
-        // https://eips.ethereum.org/EIPS/eip-2200)
-        _status = _NOT_ENTERED;
-    }
-}
+import "OpenZeppelin/openzeppelin-contracts@4.0.0/contracts/access/Ownable.sol";
+import "OpenZeppelin/openzeppelin-contracts@4.0.0/contracts/security/ReentrancyGuard.sol";
 
 pragma solidity ^0.8.7;
 
-contract ConnectFourV1 is ReentrancyGuard{
+contract ConnectFourV1 is ReentrancyGuard, Ownable {
 	/// ERRORS ///
 	error InvalidMove();
 	error Unauthorized();
@@ -108,7 +51,6 @@ contract ConnectFourV1 is ReentrancyGuard{
 	mapping(address => uint256[]) public userStakeGames;
 
 	bool public gameActive = false;
-	address public owner;
 	uint256[7] internal columnVotes = [0, 0, 0, 0, 0, 0, 0]; 
 	uint64 internal constant topColumn = 283691315109952;
 	uint64 internal constant maxHeight = 418861572486;
@@ -130,12 +72,6 @@ contract ConnectFourV1 is ReentrancyGuard{
 			_;
 			_executeMove();
 		}
-	}
-
-	// Checks that caller is owner of contract.
-	modifier onlyOwner {
-		require(msg.sender == owner, "Not authorized.");
-		_;
 	}
 
 	// Checks that game is not paused.
@@ -167,12 +103,6 @@ contract ConnectFourV1 is ReentrancyGuard{
 
 		games[globalGameId] = game;
 		gameActive = true;
-		owner = msg.sender;
-	}
-
-	function transferOwnership (address newOwner) public onlyOwner {
-		require(newOwner != address(0), 'Cannot be NULL.');
-		owner = newOwner;
 	}
 
 	function pause() public onlyOwner {
@@ -183,7 +113,10 @@ contract ConnectFourV1 is ReentrancyGuard{
 		gameActive = true;
 	}
 
-    function _isContract(address account) internal view returns (bool) {
+    function _isContract(address account)
+	internal
+	view
+	returns (bool) {
         uint256 size;
         assembly {
             size := extcodesize(account)
@@ -191,7 +124,8 @@ contract ConnectFourV1 is ReentrancyGuard{
         return size > 0;
     }
 
-	function _executeMove() internal {
+	function _executeMove()
+	internal {
 		// Load game state
 		Game storage game = games[globalGameId];
 		// Get column with highest vote for current column
@@ -225,7 +159,8 @@ contract ConnectFourV1 is ReentrancyGuard{
 		}
 	}
 
-	function _startNewRound() internal {
+	function _startNewRound()
+	internal {
 			Game memory newGame = Game({
 				height: uint64(0),
 				board: [uint64(0), uint64(0)],
@@ -242,7 +177,10 @@ contract ConnectFourV1 is ReentrancyGuard{
 			emit GameStarted(globalGameId);
 	}
 
-	function _checkColorWin(uint256 gameId, uint8 side) public view returns (bool) {
+	function _checkColorWin(uint256 gameId, uint8 side)
+	public
+	view
+	returns (bool) {
 		uint64 board = games[gameId].board[side];
 		uint8[4] memory directions = [6, 8, 7, 1];
 		uint64 bb;
@@ -255,12 +193,18 @@ contract ConnectFourV1 is ReentrancyGuard{
 		return false;
 	}
 
-	function getBoards(uint256 gameId) public view returns (uint64) {
+	function getBoards(uint256 gameId)
+	public
+	view
+	returns (uint64) {
 		Game memory game = games[gameId];
 		return game.board[0];
 	}
 
-	function getValidMoves(uint256 gameId) public view returns (bool[7] memory){
+	function getValidMoves(uint256 gameId)
+	public
+	view
+	returns (bool[7] memory){
 		Game memory game = games[gameId];
 		bool[7] memory moves;
 		for(uint col = 0; col <= 6; col++) {  
@@ -273,7 +217,10 @@ contract ConnectFourV1 is ReentrancyGuard{
 		return moves;
 	}
 
-	function getFillLevels(uint256 gameId) public view returns (uint64[7] memory){
+	function getFillLevels(uint256 gameId)
+	public
+	view
+	returns (uint64[7] memory){
 		Game memory game = games[gameId];
 		uint64[7] memory levels;
 		for(uint col = 0; col <= 6; col++) {  
@@ -312,7 +259,11 @@ contract ConnectFourV1 is ReentrancyGuard{
 		}
 	}
 
-	function vote(uint256 gameId, uint8 col) public activeGame notContract checkGameTick {
+	function vote(uint256 gameId, uint8 col) 
+	public
+	activeGame
+	notContract
+	checkGameTick {
 		Game storage game = games[gameId];
 		require(!game.finished, "You voted for a finished game.");
 		UserRound memory userRound = ledger[gameId][msg.sender];
@@ -325,7 +276,10 @@ contract ConnectFourV1 is ReentrancyGuard{
 		columnVotes[col] += userRound.amount + (minStakeAmount >> 1);
 	}
 
-	function _getMaxVoteCol() internal view returns (uint8){
+	function _getMaxVoteCol()
+	internal
+	view
+	returns (uint8){
 		uint256 biggestVote = columnVotes[0];
 		uint8 biggestVoteCol = 0;
 		for(uint8 col = 1; col <= 6; col++) {  
@@ -337,11 +291,17 @@ contract ConnectFourV1 is ReentrancyGuard{
 		return biggestVoteCol;
 	}
 
-	function getColVotes() public view returns (uint256[7] memory){
+	function getColVotes()
+	public
+	view
+	returns (uint256[7] memory){
 		return columnVotes;
 	}
 
-	function claimable(uint256 gameId, address user) public view returns (bool) {
+	function claimable(uint256 gameId, address user)
+	public
+	view
+	returns (bool) {
 		UserRound memory userRound = ledger[gameId][user];
 		Game memory game = games[gameId];
 		if (!game.finished) {
@@ -353,7 +313,10 @@ contract ConnectFourV1 is ReentrancyGuard{
 		;
 	}
 
-	function refundable(uint256 gameId, address user) public view returns (bool) {
+	function refundable(uint256 gameId, address user)
+	public
+	view
+	returns (bool) {
 		UserRound memory userRound = ledger[gameId][user];
 		Game memory game = games[gameId];
 		if (game.finished) {
@@ -366,7 +329,8 @@ contract ConnectFourV1 is ReentrancyGuard{
 		;
 	}
 
-	function _calculateRewards(uint256 gameId) internal {
+	function _calculateRewards(uint256 gameId)
+	internal {
         require(games[gameId].winColorAmount == 0 && games[gameId].rewardAmount == 0, "Rewards calculated");
         Game storage game = games[gameId];
         uint256 winColorAmount;
@@ -396,7 +360,10 @@ contract ConnectFourV1 is ReentrancyGuard{
         treasuryAmount += treasuryAmt;
     }
 
-	function claim(uint256[] calldata gameIds) external nonReentrant notContract {
+	function claim(uint256[] calldata gameIds)
+	external
+	nonReentrant
+	notContract {
         uint256 reward; // Initializes reward
 
         for (uint256 i = 0; i < gameIds.length; i++) {
@@ -411,10 +378,10 @@ contract ConnectFourV1 is ReentrancyGuard{
                 Game memory game = games[gameIds[i]];
                 addedReward = (ledger[gameIds[i]][msg.sender].amount * game.rewardAmount) / game.winColorAmount;
             }
-            // Round invalid, refund bet amount
+            // Round invalid, refund staked amount
             else {
                 require(refundable(gameIds[i], msg.sender), "Not eligible for refund");
-                addedReward = ledger[gameIds[i]][msg.sender].amount;
+                addedReward = (ledger[gameIds[i]][msg.sender].amount * (100-gameFee))/100;
             }
 
             ledger[gameIds[i]][msg.sender].claimed = true;
@@ -428,8 +395,9 @@ contract ConnectFourV1 is ReentrancyGuard{
         }
     }
 
-	function _safeTransfer(address to, uint256 value) internal {
+	function _safeTransfer(address to, uint256 value)
+	internal {
         (bool success, ) = to.call{value: value}("");
-        require(success, "TransferHelper: BNB_TRANSFER_FAILED");
+        require(success, "TransferHelper: TRANSFER_FAILED");
     }
 }
